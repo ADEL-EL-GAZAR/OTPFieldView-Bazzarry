@@ -74,7 +74,8 @@ import UIKit
     public var defaultBorderColor: UIColor = UIColor.gray
     public var filledBorderColor: UIColor = UIColor.clear
     public var errorBorderColor: UIColor?
-    
+    public var textColor: UIColor?
+
     public weak var delegate: OTPFieldViewDelegate?
     
     fileprivate var secureEntryData = [String]()
@@ -152,6 +153,9 @@ import UIKit
         
         // Set the default background color when text not set
         otpField.backgroundColor = defaultBackgroundColor
+        
+        // Set the default text color
+        otpField.textColor = textColor
         
         // Finally create the fields
         otpField.initalizeUI(forFieldType: displayType)
@@ -264,44 +268,20 @@ extension OTPFieldView: UITextFieldDelegate {
             return false
         }
         
-        if replacedText.count >= 1 {
-            // If field has a text already, then replace the text and move to next field if present
-            secureEntryData[textField.tag - 1] = string
-            
-            if hideEnteredText {
-                textField.text = " "
-            }
-            else {
-                if secureEntry {
-                    textField.text = "•"
-                }
-                else {
-                    textField.text = string
-                }
-            }
-            
-            if displayType == .diamond || displayType == .underlinedBottom {
-                (textField as! OTPTextField).shapeLayer.fillColor = filledBackgroundColor.cgColor
-                (textField as! OTPTextField).shapeLayer.strokeColor = filledBorderColor.cgColor
-            }
-            else {
-                textField.backgroundColor = filledBackgroundColor
-                textField.layer.borderColor = filledBorderColor.cgColor
-            }
-            
-            let nextOTPField = viewWithTag(textField.tag + 1)
-            
-            if let nextOTPField = nextOTPField {
-                nextOTPField.becomeFirstResponder()
-            }
-            else {
-                textField.resignFirstResponder()
-            }
-            
-            // Get the entered string
-            calculateEnteredOTPSTring(isDeleted: false)
+        // Restrict non-numeric characters
+        if !string.isEmpty && string.rangeOfCharacter(from: CharacterSet.decimalDigits.inverted) != nil {
+            return false
         }
-        else {
+        
+        if replacedText.count == fieldsCount {
+            for (index, character) in replacedText.enumerated() {
+                if let nextOTPField = viewWithTag(textField.tag + index) as? UITextField {
+                    append(string: "\(character)", in: nextOTPField)
+                }
+            }
+        } else if replacedText.count == 1 {
+            append(string: replacedText, in: textField)
+        } else {
             let currentText = textField.text ?? ""
             
             if textField.tag > 1 && currentText.isEmpty {
@@ -320,6 +300,44 @@ extension OTPFieldView: UITextFieldDelegate {
         }
         
         return false
+    }
+    
+    private func append(string: String, in textField: UITextField) {
+        // If field has a text already, then replace the text and move to next field if present
+        secureEntryData[textField.tag - 1] = string
+        
+        if hideEnteredText {
+            textField.text = " "
+        }
+        else {
+            if secureEntry {
+                textField.text = "•"
+            }
+            else {
+                textField.text = string
+            }
+        }
+        
+        if displayType == .diamond || displayType == .underlinedBottom {
+            (textField as! OTPTextField).shapeLayer.fillColor = filledBackgroundColor.cgColor
+            (textField as! OTPTextField).shapeLayer.strokeColor = filledBorderColor.cgColor
+        }
+        else {
+            textField.backgroundColor = filledBackgroundColor
+            textField.layer.borderColor = filledBorderColor.cgColor
+        }
+        
+        let nextOTPField = viewWithTag(textField.tag + 1)
+        
+        if let nextOTPField = nextOTPField {
+            nextOTPField.becomeFirstResponder()
+        }
+        else {
+            textField.resignFirstResponder()
+        }
+        
+        // Get the entered string
+        calculateEnteredOTPSTring(isDeleted: false)
     }
     
     private func deleteText(in textField: UITextField) {
