@@ -273,15 +273,14 @@ extension OTPFieldView: UITextFieldDelegate {
             return false
         }
         
-        if replacedText.count == fieldsCount {
-            for (index, character) in replacedText.enumerated() {
+        if replacedText.count >= 1 {
+            for (index, character) in string.enumerated() {
                 if let nextOTPField = viewWithTag(textField.tag + index) as? UITextField {
                     append(string: "\(character)", in: nextOTPField)
                 }
             }
-        } else if replacedText.count == 1 {
-            append(string: replacedText, in: textField)
-        } else {
+        }
+        else {
             let currentText = textField.text ?? ""
             
             if textField.tag > 1 && currentText.isEmpty {
